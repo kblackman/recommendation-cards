@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { RecommendationCard } from "./RecommendationCard";
 import { InsightDrawerData } from "./InsightDrawer";
-import { BadgeType } from "./CategoryBadge";
+import { BadgeType, badgeConfig } from "./CategoryBadge";
 
 // ── Updated pill ─────────────────────────────────────────────────────────────
 
@@ -105,7 +105,7 @@ export interface CardDef {
 export const ALL_RECOMMENDATION_CARDS: CardDef[] = [
   {
     id: 1,
-    badgeType: "channel-performance",
+    badgeType: "trend",
     title: "BT-F6 volume dropped 87% from peak — four consecutive weeks of decline",
     recommendation:
       "Investigate Google Ads changes made around Mar 23 causing the volume decline.",
@@ -129,7 +129,7 @@ export const ALL_RECOMMENDATION_CARDS: CardDef[] = [
   },
   {
     id: 4,
-    badgeType: "efficiency-gap",
+    badgeType: "channel-performance",
     title:
       "Display campaigns show high impression volume but sub-1% conversion rate",
     recommendation:
@@ -138,7 +138,7 @@ export const ALL_RECOMMENDATION_CARDS: CardDef[] = [
   },
   {
     id: 5,
-    badgeType: "channel-win",
+    badgeType: "channel-role",
     title:
       "Email nurture sequences close 18% of leads originated by paid search",
     recommendation:
@@ -147,7 +147,7 @@ export const ALL_RECOMMENDATION_CARDS: CardDef[] = [
   },
   {
     id: 6,
-    badgeType: "efficiency-gap",
+    badgeType: "channel-performance",
     title:
       "YouTube pre-roll has zero attributable conversions in the last 30 days",
     recommendation:
@@ -156,7 +156,7 @@ export const ALL_RECOMMENDATION_CARDS: CardDef[] = [
   },
   {
     id: 7,
-    badgeType: "channel-win",
+    badgeType: "attribution",
     title:
       "Organic Search drives 24% of first-touch attribution at zero variable cost",
     recommendation:
@@ -169,20 +169,9 @@ const CARDS_PER_PAGE = 3;
 
 // ── Badge pill for context menu ───────────────────────────────────────────────
 
-const BADGE_COLORS: Record<BadgeType, { bg: string; text: string }> = {
-  "channel-win":    { bg: "#DEF7F2", text: "#249980" },
-  "efficiency-gap": { bg: "#FEF3CD", text: "#B07D00" },
-  "multi-channel":  { bg: "#EDE9FE", text: "#7C3AED" },
-};
-
 function MenuBadgePill({ type }: { type: BadgeType }) {
-  const c = BADGE_COLORS[type] ?? BADGE_COLORS["channel-win"];
-  const label =
-    type === "channel-win"
-      ? "Channel Win"
-      : type === "efficiency-gap"
-      ? "Efficiency Gap"
-      : "Multi-Channel";
+  const { label, bgColor, textColor } = badgeConfig[type];
+  const c = { bg: bgColor, text: textColor };
   return (
     <span
       style={{
