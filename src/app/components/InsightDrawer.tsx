@@ -999,6 +999,14 @@ function SupportingDataTab({ cards, conversionEvents, scenarioIdx, funnelVariant
 
 // ── Details Tab ───────────────────────────────────────────
 
+// White value chip with a subtle border, used for header values in the Details tab.
+const VALUE_CHIP: React.CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid var(--gray-250)",
+  borderRadius: 6,
+  padding: "3px 10px",
+};
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
@@ -1072,7 +1080,7 @@ function DetailsTab({ content, onSwitchToSupporting }: { content: DetailsContent
               </span>
               <span
                 className="text-[14px] leading-[20px] shrink-0"
-                style={{ fontFamily: F, fontWeight: 500, color: "var(--gray-800)" }}
+                style={{ ...VALUE_CHIP, fontFamily: F, fontWeight: 500, color: "var(--gray-800)" }}
               >
                 {content.attributionModel}
               </span>
@@ -1127,7 +1135,7 @@ function DetailsTab({ content, onSwitchToSupporting }: { content: DetailsContent
               >
                 Data quality
               </span>
-              <span className="flex items-center gap-[6px] shrink-0">
+              <span className="flex items-center gap-[6px] shrink-0" style={VALUE_CHIP}>
                 <QualityBars color={quality.bars} level={quality.level} />
                 <span
                   className="text-[14px] leading-[20px]"
