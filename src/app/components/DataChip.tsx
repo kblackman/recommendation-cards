@@ -8,12 +8,14 @@ const CHIP_CONFIG: Record<
   ChipType,
   {
     label: string;
+    inlineLabel: string;
     tooltip: React.ReactNode;
     Icon: React.FC<{ size: number; strokeWidth?: number }>;
   }
 > = {
   "low-funnel": {
     label: "Low-funnel events",
+    inlineLabel: "low-funnel events",
     tooltip: (
       <>
         An action that shows a user has moved from awareness into active consideration, but has not yet converted. You defined this in the <strong>Manage Conversions</strong> section.
@@ -23,6 +25,7 @@ const CHIP_CONFIG: Record<
   },
   "mid-funnel": {
     label: "Mid-funnel events",
+    inlineLabel: "mid-funnel events",
     tooltip: (
       <>
         The closest measurable step to actual revenue impact. It's an action that represents clear commitment to receiving care, enrolling in a service, or initiating treatment. You defined this in the <strong>Manage Conversions</strong> section.
@@ -32,19 +35,32 @@ const CHIP_CONFIG: Record<
   },
   "ad-spend": {
     label: "Ad spend data",
+    inlineLabel: "ad spend",
     tooltip: "Data on dollars spent on paid marketing channels.",
     Icon: DollarSign,
   },
   touches: {
     label: "Touches data",
+    inlineLabel: "touches",
     tooltip:
       "Data on views and/or clicks coming to landing pages from paid marketing channels.",
     Icon: MousePointerClick,
   },
 };
 
-export function DataChip({ type, eventNames, disableTooltip }: { type: ChipType; eventNames?: string[]; disableTooltip?: boolean }) {
-  const { label, tooltip, Icon } = CHIP_CONFIG[type];
+export function DataChip({
+  type,
+  eventNames,
+  disableTooltip,
+  variant = "chip",
+}: {
+  type: ChipType;
+  eventNames?: string[];
+  disableTooltip?: boolean;
+  /** "inline" renders a lowercase dotted-underline term for use inside a sentence. */
+  variant?: "chip" | "inline";
+}) {
+  const { label, inlineLabel, tooltip, Icon } = CHIP_CONFIG[type];
 
   // For funnel chips, override tooltip with actual event names when provided
   const resolvedTooltip: React.ReactNode =
@@ -61,7 +77,7 @@ export function DataChip({ type, eventNames, disableTooltip }: { type: ChipType;
 
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   function handleMouseEnter() {
     if (ref.current) {
@@ -76,8 +92,24 @@ export function DataChip({ type, eventNames, disableTooltip }: { type: ChipType;
 
   return (
     <>
+      {variant === "inline" ? (
+        <span
+          ref={ref as React.RefObject<HTMLSpanElement>}
+          onMouseEnter={disableTooltip ? undefined : handleMouseEnter}
+          onMouseLeave={disableTooltip ? undefined : () => setVisible(false)}
+          className="cursor-help"
+          style={{
+            textDecorationLine: "underline",
+            textDecorationStyle: "dotted",
+            textDecorationColor: "var(--gray-400)",
+            textUnderlineOffset: 3,
+          }}
+        >
+          {inlineLabel}
+        </span>
+      ) : (
       <div
-        ref={ref}
+        ref={ref as React.RefObject<HTMLDivElement>}
         onMouseEnter={disableTooltip ? undefined : handleMouseEnter}
         onMouseLeave={disableTooltip ? undefined : () => setVisible(false)}
         className="inline-flex items-center gap-[4px] px-[8px] py-[4px] rounded-full shrink-0 cursor-pointer"
@@ -93,6 +125,7 @@ export function DataChip({ type, eventNames, disableTooltip }: { type: ChipType;
         <Icon size={14} strokeWidth={1.5} />
         <span>{label}</span>
       </div>
+      )}
 
       {!disableTooltip && visible &&
         ReactDOM.createPortal(

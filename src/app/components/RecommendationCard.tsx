@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import ReactDOM from "react-dom";
-import { Share2, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { CategoryBadge, BadgeType } from "./CategoryBadge";
 import { Button } from "./Button";
 import thumbsUpPath from "../../imports/PositiveFeedback/svg-1mxrnpaxhp";
@@ -285,8 +285,7 @@ export function RecommendationCard({
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between gap-3">
             <CategoryBadge type={badgeType} />
-            <div className="flex items-center gap-[5px] shrink-0">
-              <Share2 size={12} color="var(--gray-400)" strokeWidth={1.5} />
+            <div className="flex items-center shrink-0">
               <span
                 className="text-gray-500 text-[11px] leading-[16px] tracking-[0.2px]"
                 style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 400 }}

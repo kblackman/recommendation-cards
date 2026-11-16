@@ -5,7 +5,7 @@ import { Info } from "lucide-react";
 import { CategoryBadge, BadgeType } from "./CategoryBadge";
 import { Button } from "./Button";
 import { DataChip, ChipType } from "./DataChip";
-import { semantic } from "../../styles/tokens";
+import { semantic, colors } from "../../styles/tokens";
 import svgDrawer from "../../imports/InsightDrawer/svg-232pl23iiw";
 import svgCal1 from "../../imports/InsightDrawer-1/svg-0f8rrx0smv";
 import svgCal2 from "../../imports/InsightDrawer-1-1/svg-4thx9qpsds";
@@ -49,12 +49,14 @@ function LightbulbIcon() {
   );
 }
 
-function QualityBars({ color }: { color: string }) {
+// Signal-strength bars: High fills 3, Medium 2, Low 1; the rest stay gray.
+function QualityBars({ color, level }: { color: string; level: number }) {
+  const off = "var(--gray-300)";
   return (
     <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
-      <rect x="0" y="8" width="4" height="6" rx="1" fill={color} />
-      <rect x="6" y="4" width="4" height="10" rx="1" fill={color} />
-      <rect x="12" y="0" width="4" height="14" rx="1" fill={color} />
+      <rect x="0" y="8" width="4" height="6" rx="1" fill={level >= 1 ? color : off} />
+      <rect x="6" y="4" width="4" height="10" rx="1" fill={level >= 2 ? color : off} />
+      <rect x="12" y="0" width="4" height="14" rx="1" fill={level >= 3 ? color : off} />
     </svg>
   );
 }
@@ -447,11 +449,13 @@ function ChevronIcon({ open }: { open: boolean }) {
 // Collapsed row shows counts. Expands to tab + search + scrollable list.
 function VariantA({ midEvents, lowEvents }: { midEvents: ConversionEvent[]; lowEvents: ConversionEvent[] }) {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"mid" | "low">("mid");
+  const stages = (["mid", "low"] as const).filter((t) => (t === "mid" ? midEvents : lowEvents).length > 0);
+  const [activeTab, setActiveTab] = useState<"mid" | "low">(stages[0] ?? "mid");
   const [search, setSearch] = useState("");
   const [searchVisible, setSearchVisible] = useState(false);
 
-  const tabEvents = activeTab === "mid" ? midEvents : lowEvents;
+  const currentTab = stages.includes(activeTab) ? activeTab : (stages[0] ?? activeTab);
+  const tabEvents = currentTab === "mid" ? midEvents : lowEvents;
   const filtered = search.trim()
     ? tabEvents.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()))
     : tabEvents;
@@ -478,18 +482,14 @@ function VariantA({ midEvents, lowEvents }: { midEvents: ConversionEvent[]; lowE
         {/* Count dots — hidden when open */}
         {!open && (
           <span className="flex items-center gap-[14px]">
-            <span className="flex items-center gap-[5px]">
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3f51b5", flexShrink: 0, display: "inline-block" }} />
-              <span className="text-[13px] leading-[20px]" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 400, color: "var(--gray-800)" }}>
-                {midEvents.length} mid
+            {stages.map((tab) => (
+              <span key={tab} className="flex items-center gap-[5px]">
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: tab === "mid" ? "#3f51b5" : "#249980", flexShrink: 0, display: "inline-block" }} />
+                <span className="text-[13px] leading-[20px]" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 400, color: "var(--gray-800)" }}>
+                  {(tab === "mid" ? midEvents : lowEvents).length} {tab}
+                </span>
               </span>
-            </span>
-            <span className="flex items-center gap-[5px]">
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#249980", flexShrink: 0, display: "inline-block" }} />
-              <span className="text-[13px] leading-[20px]" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 400, color: "var(--gray-800)" }}>
-                {lowEvents.length} low
-              </span>
-            </span>
+            ))}
           </span>
         )}
         <ChevronIcon open={open} />
@@ -507,8 +507,8 @@ function VariantA({ midEvents, lowEvents }: { midEvents: ConversionEvent[]; lowE
               className="flex items-center rounded-[6px] p-[3px] shrink-0"
               style={{ background: "var(--gray-100)" }}
             >
-              {(["mid", "low"] as const).map((tab) => {
-                const active = activeTab === tab;
+              {stages.map((tab) => {
+                const active = currentTab === tab;
                 const count = tab === "mid" ? midEvents.length : lowEvents.length;
                 const textColor = active ? "var(--gray-800)" : "var(--gray-500)";
                 const fontWeight = active ? 600 : 400;
@@ -612,7 +612,7 @@ function VariantA({ midEvents, lowEvents }: { midEvents: ConversionEvent[]; lowE
                   <span
                     style={{
                       width: 7, height: 7, borderRadius: "50%",
-                      background: activeTab === "mid" ? "#3f51b5" : "#249980",
+                      background: currentTab === "mid" ? "#3f51b5" : "#249980",
                       flexShrink: 0, display: "inline-block",
                     }}
                   />
@@ -810,13 +810,17 @@ function VariantB({ midEvents, lowEvents }: { midEvents: ConversionEvent[]; lowE
         style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 400, color: "var(--gray-800)" }}
       >
         Built from your{" "}
-        <span style={termStyle("mid")} onClick={(e) => handleTermClick("mid", e)}>
-          {midEvents.length} mid-funnel
-        </span>
-        {" "}and{" "}
-        <span style={termStyle("low")} onClick={(e) => handleTermClick("low", e)}>
-          {lowEvents.length} low-funnel
-        </span>
+        {midEvents.length > 0 && (
+          <span style={termStyle("mid")} onClick={(e) => handleTermClick("mid", e)}>
+            {midEvents.length} mid-funnel
+          </span>
+        )}
+        {midEvents.length > 0 && lowEvents.length > 0 && " and "}
+        {lowEvents.length > 0 && (
+          <span style={termStyle("low")} onClick={(e) => handleTermClick("low", e)}>
+            {lowEvents.length} low-funnel
+          </span>
+        )}
         {" "}conversion events.
       </p>
 
@@ -909,22 +913,28 @@ function StatCard({ label, value, valueUnit, dateRange, explanation, tooltip, ch
         {explanation}
       </p>
 
-      {/* ── Divider + chips (only when chips present) ── */}
+      {/* ── Sources line (only when sources present) ── */}
       {chips.length > 0 && (
-        <>
-          <div style={{ borderTop: "1px solid var(--gray-200)" }} />
-          <div className="flex flex-wrap gap-[4px]">
-            {chips.map((chip) => {
-              let eventNames: string[] | undefined;
-              if (chip === "low-funnel" && conversionEvents) {
-                eventNames = conversionEvents.filter((e) => e.funnel === "low").map((e) => e.name);
-              } else if (chip === "mid-funnel" && conversionEvents) {
-                eventNames = conversionEvents.filter((e) => e.funnel === "mid").map((e) => e.name);
-              }
-              return <DataChip key={chip} type={chip} eventNames={eventNames} />;
-            })}
-          </div>
-        </>
+        <p
+          className="text-gray-500 text-[12px] leading-[18px]"
+          style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 400 }}
+        >
+          Sources:{" "}
+          {chips.map((chip, i) => {
+            let eventNames: string[] | undefined;
+            if (chip === "low-funnel" && conversionEvents) {
+              eventNames = conversionEvents.filter((e) => e.funnel === "low").map((e) => e.name);
+            } else if (chip === "mid-funnel" && conversionEvents) {
+              eventNames = conversionEvents.filter((e) => e.funnel === "mid").map((e) => e.name);
+            }
+            return (
+              <React.Fragment key={chip}>
+                {i > 0 && " · "}
+                <DataChip type={chip} eventNames={eventNames} variant="inline" />
+              </React.Fragment>
+            );
+          })}
+        </p>
       )}
 
       {/* ── Tooltip (portal) ── */}
@@ -969,9 +979,17 @@ function StatCard({ label, value, valueUnit, dateRange, explanation, tooltip, ch
 function SupportingDataTab({ cards, conversionEvents, scenarioIdx, funnelVariant }: { cards: SupportingCard[]; conversionEvents: ConversionEvent[]; scenarioIdx: number | null; funnelVariant: FunnelVariant }) {
   const activeEvents = scenarioIdx !== null ? EVENT_SCENARIOS[scenarioIdx].events : conversionEvents;
 
+  // Only summarize the funnel stages this drawer's metrics actually use.
+  const usedStages = new Set(
+    cards.flatMap((c) => c.chips).flatMap((chip) =>
+      chip === "mid-funnel" ? ["mid"] : chip === "low-funnel" ? ["low"] : []
+    )
+  );
+  const summaryEvents = activeEvents.filter((e) => usedStages.has(e.funnel));
+
   return (
     <div className="flex flex-col gap-3 p-8">
-      <ConversionEventsBlock events={activeEvents} variant={funnelVariant} />
+      <ConversionEventsBlock events={summaryEvents} variant={funnelVariant} />
       {cards.map((card) => (
         <StatCard key={card.label} {...card} conversionEvents={activeEvents} />
       ))}
@@ -980,12 +998,6 @@ function SupportingDataTab({ cards, conversionEvents, scenarioIdx, funnelVariant
 }
 
 // ── Details Tab ───────────────────────────────────────────
-
-const QUALITY_BADGE: Record<string, { bg: string; color: string }> = {
-  High:   { bg: "#e0f7ef", color: "#249980" },
-  Medium: { bg: "#fef3d8", color: "#c28200" },
-  Low:    { bg: "#fdeaea", color: "#c0191b" },
-};
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -1000,7 +1012,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function DetailsTab({ content, onSwitchToSupporting }: { content: DetailsContent; onSwitchToSupporting: () => void }) {
   const F = "'Roboto', sans-serif";
-  const qualityBadge = QUALITY_BADGE[content.dataQualityLabel] ?? { bg: "var(--gray-100)", color: "var(--gray-500)" };
+  const QUALITY: Record<string, { level: number; bars: string; text: string }> = {
+    High:   { level: 3, bars: colors.green[600],  text: colors.green[700] },
+    Medium: { level: 2, bars: colors.yellow[600], text: colors.yellow[700] },
+    Low:    { level: 1, bars: colors.red[500],    text: colors.red[600] },
+  };
+  const quality = QUALITY[content.dataQualityLabel] ?? { level: 0, bars: "var(--gray-400)", text: "var(--gray-600)" };
 
   const passedChecks = content.dataQualityChecks.filter((c) => c.passed);
   const failedChecks = content.dataQualityChecks.filter((c) => !c.passed);
@@ -1012,14 +1029,14 @@ function DetailsTab({ content, onSwitchToSupporting }: { content: DetailsContent
   }
 
   return (
-    <div className="flex flex-col px-6 py-7 gap-0">
+    <div className="flex flex-col px-8 py-7 gap-0">
 
       {/* ── RECOMMENDED ACTION ── */}
       <div className="flex flex-col gap-3">
         <SectionLabel>Recommended Action</SectionLabel>
         <p
-          className="text-gray-800 text-[20px] leading-[28px]"
-          style={{ fontFamily: F, fontWeight: 700 }}
+          className="text-gray-800 text-[18px] leading-[26px]"
+          style={{ fontFamily: F, fontWeight: 600 }}
         >
           {content.recommendationHeadline}
         </p>
@@ -1053,24 +1070,12 @@ function DetailsTab({ content, onSwitchToSupporting }: { content: DetailsContent
               >
                 Attribution model
               </span>
-              {/* Pill badge */}
-              <div
-                className="flex items-center gap-[6px] px-3 py-[5px] rounded-full shrink-0"
-                style={{ background: "#e8eafb" }}
+              <span
+                className="text-[14px] leading-[20px] shrink-0"
+                style={{ fontFamily: F, fontWeight: 500, color: "var(--gray-800)" }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                  <circle cx="18" cy="5" r="3" stroke="#3f51b5" strokeWidth="2" />
-                  <circle cx="6" cy="12" r="3" stroke="#3f51b5" strokeWidth="2" />
-                  <circle cx="18" cy="19" r="3" stroke="#3f51b5" strokeWidth="2" />
-                  <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" stroke="#3f51b5" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <span
-                  className="text-[13px] leading-[18px]"
-                  style={{ fontFamily: F, fontWeight: 600, color: "#3f51b5" }}
-                >
-                  {content.attributionModel}
-                </span>
-              </div>
+                {content.attributionModel}
+              </span>
             </div>
 
             {/* Metric row + bar */}
@@ -1122,19 +1127,15 @@ function DetailsTab({ content, onSwitchToSupporting }: { content: DetailsContent
               >
                 Data quality
               </span>
-              {/* Quality badge pill */}
-              <div
-                className="flex items-center gap-[6px] px-3 py-[5px] rounded-full shrink-0"
-                style={{ background: qualityBadge.bg }}
-              >
-                <QualityBars color={qualityBadge.color} />
+              <span className="flex items-center gap-[6px] shrink-0">
+                <QualityBars color={quality.bars} level={quality.level} />
                 <span
-                  className="text-[13px] leading-[18px]"
-                  style={{ fontFamily: F, fontWeight: 600, color: qualityBadge.color }}
+                  className="text-[14px] leading-[20px]"
+                  style={{ fontFamily: F, fontWeight: 600, color: quality.text }}
                 >
                   {content.dataQualityLabel}
                 </span>
-              </div>
+              </span>
             </div>
 
             {/* Subheader */}
@@ -1256,7 +1257,7 @@ export function InsightDrawer({ isOpen, data, onClose, scenarioIdx, funnelVarian
             transition={{ type: "spring", damping: 30, stiffness: 280 }}
           >
             {/* Header */}
-            <div className="px-[33px] pt-[33px] pb-0 border-b border-gray-300 shrink-0">
+            <div className="px-8 pt-8 pb-0 border-b border-gray-300 shrink-0">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-4 flex-1 min-w-0">
                   <CategoryBadge type={data.badgeType} />
